@@ -96,7 +96,6 @@ int loadBackDropForCompiler (char * fileName) {
 	return i;
 }
 
-
 int saveHSI (char * filename) {
 	FILE * writer = fopen (filename, "wb");
 	int x, y, lookAhead;
