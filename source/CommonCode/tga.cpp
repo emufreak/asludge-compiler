@@ -24,6 +24,82 @@ bool dither24bitImages = 0;
 
 char ditherArray[4][4] = {{4,12,6,14},{10,0,8,2},{7,15,5,13},{9,3,11,1}};
 
+void grabRGB (FILE * fp, int bpc, unsigned char & r, unsigned char & g, unsigned char & b, palCol thePalette[])
+{
+	int a;
+	int grabbed1, grabbed2;
+	switch (bpc) {
+		case 8:
+		grabbed1 = fgetc (fp);
+		r = thePalette[grabbed1].r;
+		g = thePalette[grabbed1].g;
+		b = thePalette[grabbed1].b;
+		break;
+	
+		case 16:
+		grabbed1 = fgetc (fp);
+		grabbed2 = fgetc (fp);
+		r = ((grabbed2 & 127) << 1),
+		g = ((grabbed1 & 224) >> 2) + (grabbed2 << 6);
+		b = ((grabbed1 & 31) << 3);
+		break;
+				
+		case 24:
+		b = fgetc (fp);
+		g = fgetc (fp);
+		r = fgetc (fp);
+		break;
+		
+		case 32:
+		b = fgetc (fp);
+		g = fgetc (fp);
+		r = fgetc (fp);
+		a = fgetc (fp);
+			if (a < 100) {
+				r = 255;
+				g = 0;
+				b = 255;
+			}
+		break;		
+	}
+}
+
+void grabRGBCompressed (FILE * fp, int bpc, unsigned char & r2, unsigned char & g2, unsigned char & b2, palCol thePalette[]) {
+	static unsigned char r, g, b;
+	static bool oneCol;
+	unsigned short col;
+	
+	// Do we have to start a new packet?
+	if (countDown == 0) {
+		
+		// Read the packet description thingy
+		col = fgetc (fp);
+		
+		// Is it raw data?
+		if (col >= 128) {
+			oneCol = true;
+			countDown = col - 127;
+			grabRGB (fp, bpc, r, g, b, thePalette);
+			//			fprintf (debugFile, "  %d raw colours...\n", countDown);
+		} else {
+			oneCol = false;
+			countDown = col + 1;
+			//			fprintf (debugFile, "  %d pixels the same colour...\n", countDown);
+		}
+	}
+	
+	countDown --;
+	
+	if (! oneCol) {
+		grabRGB (fp, bpc, r2, g2, b2, thePalette);
+	} else {
+		r2 = r;
+		g2 = g;
+		b2 = b;
+	}
+}
+
+
 void grabRGBA (FILE * fp, int bpc, unsigned char & r, unsigned char & g, unsigned char & b, unsigned char & a, palCol thePalette[])
 {
 	int grabbed1, grabbed2;
@@ -72,47 +148,6 @@ void grabRGBA (FILE * fp, int bpc, unsigned char & r, unsigned char & g, unsigne
 	}
 }
 
-
-void grabRGB (FILE * fp, int bpc, unsigned char & r, unsigned char & g, unsigned char & b, palCol thePalette[])
-{
-	int a;
-	int grabbed1, grabbed2;
-	switch (bpc) {
-		case 8:
-		grabbed1 = fgetc (fp);
-		r = thePalette[grabbed1].r;
-		g = thePalette[grabbed1].g;
-		b = thePalette[grabbed1].b;
-		break;
-	
-		case 16:
-		grabbed1 = fgetc (fp);
-		grabbed2 = fgetc (fp);
-		r = ((grabbed2 & 127) << 1),
-		g = ((grabbed1 & 224) >> 2) + (grabbed2 << 6);
-		b = ((grabbed1 & 31) << 3);
-		break;
-				
-		case 24:
-		b = fgetc (fp);
-		g = fgetc (fp);
-		r = fgetc (fp);
-		break;
-		
-		case 32:
-		b = fgetc (fp);
-		g = fgetc (fp);
-		r = fgetc (fp);
-		a = fgetc (fp);
-			if (a < 100) {
-				r = 255;
-				g = 0;
-				b = 255;
-			}
-		break;		
-	}
-}
-
 void grabRGBACompressed (FILE * fp, int bpc, unsigned char & r2, unsigned char & g2, unsigned char & b2, unsigned char & a2, palCol thePalette[]) {
 	static unsigned char r, g, b, a;
 	static bool oneCol;
@@ -149,9 +184,29 @@ void grabRGBACompressed (FILE * fp, int bpc, unsigned char & r2, unsigned char &
 	}
 }
 
+int grabPalIndex(FILE * fp, int bpc) {
+	
+	int returnvalue;
+	int grabbed1, grabbed2;
+	
+	switch (bpc) {
+		case 8:
+		//fprintf(stderr, "numbers of bpcs = 8\n");
+		returnvalue = fgetc (fp);		
+		break;			
+		default:
+		fprintf(stderr, "unsupported bpc in tga\n");
 
-void grabRGBCompressed (FILE * fp, int bpc, unsigned char & r2, unsigned char & g2, unsigned char & b2, palCol thePalette[]) {
-	static unsigned char r, g, b;
+	}
+
+	//fprintf(stderr, "grabpalindexreturnvalue  = %d\n",returnvalue);
+
+
+	return returnvalue;
+}
+
+int grabBitmapCompressed (FILE * fp, int bpc) {
+	static int bitmapbyte;
 	static bool oneCol;
 	unsigned short col;
 	
@@ -160,12 +215,14 @@ void grabRGBCompressed (FILE * fp, int bpc, unsigned char & r2, unsigned char & 
 		
 		// Read the packet description thingy
 		col = fgetc (fp);
+		//fprintf(stderr, "col = %d\n", col);
+
 		
 		// Is it raw data?
 		if (col >= 128) {
 			oneCol = true;
 			countDown = col - 127;
-			grabRGB (fp, bpc, r, g, b, thePalette);
+			bitmapbyte = grabPalIndex (fp, bpc);
 			//			fprintf (debugFile, "  %d raw colours...\n", countDown);
 		} else {
 			oneCol = false;
@@ -177,12 +234,15 @@ void grabRGBCompressed (FILE * fp, int bpc, unsigned char & r2, unsigned char & 
 	countDown --;
 	
 	if (! oneCol) {
-		grabRGB (fp, bpc, r2, g2, b2, thePalette);
+		bitmapbyte = grabPalIndex (fp, bpc);
 	} else {
-		r2 = r;
-		g2 = g;
-		b2 = b;
+		//fprintf(stderr, "grabpitmapcompressed result = %d\n", bitmapbyte);
+		return bitmapbyte;
 	}
+
+	//fprintf(stderr, "grabpitmapcompressed result = %d\n", bitmapbyte);
+
+	return bitmapbyte;
 }
 
 void addDither (unsigned char & col, const unsigned char add)
@@ -190,6 +250,12 @@ void addDither (unsigned char & col, const unsigned char add)
 	int tot = col;
 	tot += add;
 	col = (tot > 255) ? 255 : tot;
+}
+
+unsigned short readAPixel (FILE * fp, int bpc, int x, int y) {
+		
+	return grabBitmapCompressed (fp, bpc);
+
 }
 
 unsigned short readAColour (FILE * fp, int bpc, palCol thePalette[], int x, int y) {
@@ -218,6 +284,15 @@ unsigned short readCompressedColour (FILE * fp, int bpc, palCol thePalette[], in
 	}
 	
 	return makeColour (r, g, b);
+}
+
+unsigned short readCompressedPixel (FILE * fp, int bpc, int x, int y) {
+	//fprintf(stderr, "readcompressedpixel ...\n");
+
+	unsigned char r,g,b;
+	int result = grabBitmapCompressed (fp, bpc);
+	//fprintf(stderr, "readcompressedpixel result = %d\n", result);
+	return result;
 }
 
 const char * readTGAHeader (TGAHeader & h, FILE * fp, palCol thePalette[]) {
@@ -259,11 +334,11 @@ const char * readTGAHeader (TGAHeader & h, FILE * fp, palCol thePalette[]) {
 
 	if (h.gotMap) {
 		int c;
-		for (c = 0; c < h.numPalColours; c ++) {
+		for (c = 0; c < h.numPalColours; c++) {
 			grabRGB (fp, h.bitsPerPalColour, thePalette[c].r, thePalette[c].g, thePalette[c].b, thePalette);
 		}
 	}
-
+ 
 	return NULL;
 }
 

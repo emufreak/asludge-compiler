@@ -11,30 +11,30 @@
 #include "tga.h"
 #include "compilerinfo.h"
 
-unsigned short int * * backDropImage;
+unsigned short int * backDropImage;
 bool backdrop32;
 unsigned char * backDrop32Image;
 int VERT_RES, HORZ_RES;
 
 bool initBackDropForCompiler (int x, int y) {
+	fprintf(stderr, "Init Backdrop for Compiler ...\n");
 	int a;
 
 	HORZ_RES = x;
 	VERT_RES = y;
 
-	backDropImage = new unsigned short int * [y];
+	int size = HORZ_RES*VERT_RES;
+	backDropImage = new unsigned short int [size];
 	if (! backDropImage) return false;
-	for (a = 0; a < y; a ++) {
-		backDropImage[a] = new unsigned short int [x];
-		if (! backDropImage[a]) return false;
-	}
+
+	fprintf(stderr, "Init Backdrop Successful\n");
 	return true;
 }
 
-int loadBackDropForCompiler (char * fileName) {
+int loadBackDropForCompiler (char * fileName, palCol thePalette[256]) {
+	fprintf(stderr, "Loading Backdrop for Compiler ...\n");
 	unsigned short int * toScreen;
 	unsigned short int t1, t2;
-	palCol thePalette[256];
 
 	// Open the file
 	FILE * fp = fopen (fileName, "rb");
@@ -55,48 +55,42 @@ int loadBackDropForCompiler (char * fileName) {
 
 		initBackDropForCompiler (imageHeader.width, imageHeader.height);
 
-		unsigned short (* readColFunction) (FILE *, int, palCol[], int, int) =
-			imageHeader.compressed ? readCompressedColour : readAColour;
+
+		unsigned short (* readColFunction) (FILE *, int, int, int) =
+			imageHeader.compressed ? readCompressedPixel : readAPixel;
 
 		for (t2 = imageHeader.height; t2; t2 --) {
-			toScreen = backDropImage[(imageHeader.imageDescriptor & 32) ? (imageHeader.height - t2) : (t2 - 1)];
+			int tmp = (imageHeader.imageDescriptor & 32) ? (imageHeader.height - t2) : (t2 - 1);
+			toScreen = &backDropImage[tmp * imageHeader.width];
+			
+			
+			backDropImage[(imageHeader.imageDescriptor & 32) ? (imageHeader.height - t2) : (t2 - 1)];
 			for (t1 = 0; t1 < imageHeader.width; t1 ++) {
-				* (toScreen ++) = readColFunction (fp, imageHeader.pixelDepth, thePalette, t1, t2);
+				
+				int tmp = readColFunction (fp, imageHeader.pixelDepth, t1, t2);
+				//fprintf(stderr, "%d,",tmp);
+				* (toScreen ++) = tmp;
 			}
 		}
 	} else {
-		HORZ_RES = imageHeader.width;
-		VERT_RES = imageHeader.height;
 
-		backdrop32 = true;
-
-		backDrop32Image = new unsigned char [imageHeader.height * imageHeader.width * 4];
-		if (! backDrop32Image) return false;
-
-		unsigned char r,g,b,a;
-
-		for (int t2 = imageHeader.height-1; t2>=0; t2 --) {
-			for (int t1 = 0; t1 < imageHeader.width; t1 ++) {
-				if (! imageHeader.compressed) {
-					grabRGBA (fp, imageHeader.pixelDepth, r, g, b, a, thePalette);
-				} else {
-					grabRGBACompressed (fp, imageHeader.pixelDepth, r, g, b, a, thePalette);
-				}
-
-				backDrop32Image[t2*imageHeader.width*4+t1*4] = r;
-				backDrop32Image[t2*imageHeader.width*4+t1*4+1] = g;
-				backDrop32Image[t2*imageHeader.width*4+t1*4+2] = b;
-				backDrop32Image[t2*imageHeader.width*4+t1*4+3] = a;
-			}
-		}
 	}
+
+	/*for(int i=0; i<imageHeader.width*imageHeader.height;i++)
+	{
+		fprintf(stderr, "%d,", backDropImage[i]);
+	}*/
+
 
 	int i = ftell (fp);
 	fclose (fp);
 	return i;
 }
 
-int saveHSI (char * filename) {
+int saveHSI (char * filename, palCol thePalette[]) {
+	fprintf(stderr, "saving HSI ...\n");
+	fprintf(stderr, "saving HSI %s ...\n", filename);
+
 	FILE * writer = fopen (filename, "wb");
 	int x, y, lookAhead;
 	unsigned short int * fromHere;
@@ -105,28 +99,64 @@ int saveHSI (char * filename) {
 	if (! writer) return 0;
 	put2bytes (HORZ_RES, writer);
 	put2bytes (VERT_RES, writer);
-	for (y = 0; y < VERT_RES; y ++) {
-		fromHere = backDropImage[y];
-		x = 0;
-		while (x < HORZ_RES) {
-			lookPointer = fromHere + 1;
-			for (lookAhead = x + 1; lookAhead < HORZ_RES; lookAhead ++) {
-				if (lookAhead - x == 256) break;
-				if (* fromHere != * lookPointer) break;
-				lookPointer ++;
-			}
-			if (lookAhead == x + 1) {
-				put2bytes (* fromHere, writer);
-			} else {
-				put2bytes (* fromHere | 32, writer);
-				fputc (lookAhead - x - 1, writer);
-			}
-			fromHere = lookPointer;
-			x = lookAhead;
-		}
+	
+	for(int i=0;i<32;i++) { //Todo: Diffferent Bitplane Numbers
+		int color = (thePalette[i].r /16) << 8;
+		color += (thePalette[i].g /16) << 4;
+		color += (thePalette[i].b /16);
+		put2bytes (color, writer);
 	}
+
+	unsigned int bitplanesize = HORZ_RES*VERT_RES/8;
+
+	//5 Bitplanes + Mask
+	unsigned char *planes = new unsigned char[bitplanesize*6];	
+
+	for(int i=0;i<bitplanesize;i++) {
+
+		//Init values
+		planes[i] = 0;
+		planes[bitplanesize+i] = 0;
+		planes[2*bitplanesize+i] = 0;
+		planes[3*bitplanesize+i] = 0;
+		planes[4*bitplanesize+i] = 0;
+		planes[5*bitplanesize+i] = 0;
+
+		for(int i2=0;i2<8;i2++) {
+
+		//Amiga Todo: Different Bitplane number
+		unsigned int tmp = backDropImage[i*8+i2];
+		
+		unsigned int bpl1 = (tmp & 0b1) ? 0b10000000 : 0;
+		unsigned int bpl2 = (tmp & 0b10) ? 0b10000000 : 0;
+		unsigned int bpl3 = (tmp & 0b100) ? 0b10000000 : 0;
+		unsigned int bpl4 = (tmp & 0b1000) ? 0b10000000 : 0;
+		unsigned int bpl5 = (tmp & 0b10000) ? 0b10000000 : 0;	
+		unsigned int bplmask = tmp ? 0b10000000 : 0;
+
+		planes[i] |= bpl1 >> i2;
+		planes[bitplanesize+i] |= bpl2 >> i2;
+		planes[2*bitplanesize+i] |= bpl3 >> i2;
+		planes[3*bitplanesize+i] |= bpl4 >> i2;
+		planes[4*bitplanesize+i] |= bpl5 >> i2;
+		planes[5*bitplanesize+i] |= bplmask >> i2;
+		//fprintf(stderr, "%d\n",tmp);
+		}		
+	}
+
+	fprintf(stderr, "Bitplanes written to buffer ...\n");
+
+	/*for(int i=0;i<160;i++) {
+		fprintf(stderr, "%02x",planes[i]);
+	}*/
+
+	fwrite(planes, sizeof(char), bitplanesize*6,writer);
+
+
 	int i = ftell (writer);
 	fclose (writer);
+	delete planes;
+	fprintf(stderr, "HSI Saved ...\n");
 	return i;
 }
 
@@ -168,6 +198,11 @@ int savePNG (char * filename, int w, int h, unsigned char * data) {
 
 
 bool convertTGA (char * filename) {
+
+	palCol thePalette[256];
+
+	fprintf(stderr, "Converting TGA ...\n");
+
 	char * oldName = joinStrings (filename, "");
 	filename[strlen (filename) - 3] = 's';
 	filename[strlen (filename) - 2] = 'l';
@@ -175,9 +210,10 @@ bool convertTGA (char * filename) {
 	int i, j;
 
 	if (newerFile (oldName, filename)) {
+		fprintf(stderr, "Running newer file ...\n");
 		backdrop32 = false;
-		setCompilerText (COMPILER_TXT_ITEM, "Compressing image");
-		i = loadBackDropForCompiler (oldName);
+		setCompilerText (COMPILER_TXT_ITEM, "Compressing image");		
+		i = loadBackDropForCompiler (oldName, thePalette);
 		if (! i) return false;
 		if (backdrop32) {
 			j = savePNG (filename, HORZ_RES, VERT_RES, backDrop32Image);
@@ -185,8 +221,9 @@ bool convertTGA (char * filename) {
 
 			if (! j) return false;
 		} else {
-			j = saveHSI (filename);
-			for (int a = 0; a < VERT_RES; a ++) delete backDropImage[a];
+			fprintf(stderr, "No PNG ...\n");
+			j = saveHSI (filename, thePalette);
+			//for (int a = 0; a < VERT_RES; a ++) delete backDropImage;
 			delete backDropImage;
 
 			if (! j) return false;
@@ -194,5 +231,6 @@ bool convertTGA (char * filename) {
 		setCompilerText (COMPILER_TXT_ITEM, "");
 	}
 	delete oldName;
+	fprintf(stderr, "Finished Converting ...\n");
 	return true;
 }

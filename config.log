@@ -782,7 +782,7 @@ conftest.c:56:6: warning: conflicting types for built-in function 'sqrt'; expect
 conftest.c:48:1: note: 'sqrt' is declared in header '<math.h>'
    47 | #include <limits.h>
    48 | #undef sqrt
-/usr/bin/ld: /tmp/ccRcKWVF.o: in function `main':
+/usr/bin/ld: /tmp/ccKowaYZ.o: in function `main':
 /home/uersu/opensludge/conftest.c:67: undefined reference to `sqrt'
 collect2: error: ld returned 1 exit status
 configure:7160: $? = 1
@@ -898,10 +898,13 @@ config.status:924: creating GTK_Dev_Kit/Makefile
 config.status:924: creating GTK_Dev_Kit/support/Makefile
 config.status:924: creating doc/Makefile
 config.status:924: creating config.h
+config.status:1105: config.h is unchanged
 config.status:1153: executing depfiles commands
 config.status:1230: cd source/Engine       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
+make: Nothing to be done for 'am--depfiles'.
 config.status:1235: $? = 0
 config.status:1230: cd GTK_Dev_Kit       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
+make: Nothing to be done for 'am--depfiles'.
 config.status:1235: $? = 0
 
 ## ---------------- ##

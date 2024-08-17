@@ -101,6 +101,9 @@ void setCompileStep (int a, int totalBits)
 
 
 bool doSingleCompileStep (char **fileList, int *numFiles) {
+
+	fprintf(stderr, "Doing Single Compile Step ...\n");
+
 	switch (compileStep)
 	{
 		case CSTEP_INIT:
@@ -376,6 +379,9 @@ bool doSingleCompileStep (char **fileList, int *numFiles) {
 }
 
 int compileEverything (char * project, char **fileList, int *numFiles, void (*infoReceiver)(compilerInfo *)) {
+	
+	fprintf(stderr, "Compiling Everything ...\n");
+
 	int success = true;
 	setInfoReceiver(infoReceiver);
 

@@ -135,6 +135,7 @@ int main (int argc, char *argv[])
 		return -1;
 	}
 	fprintf(stderr, "Start compiling...\n");
+
 	if (!compileEverything(argv[argc - 1], fileList, &fileListNum, &receiveCompilerInfo))
 	{
 		fprintf(stderr, "Error compiling project.\n");

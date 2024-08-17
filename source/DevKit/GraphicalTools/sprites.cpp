@@ -759,7 +759,6 @@ int findOrAddPal (spritePalette *searchIn, unsigned char r, unsigned char g, uns
 	return -1;
 }
 
-
 bool loadSpriteFromTGA (const char * file, struct spriteBank *sprites, int index)
 {
 	palCol thePalette[256];

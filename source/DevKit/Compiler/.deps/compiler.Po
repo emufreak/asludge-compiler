@@ -91,8 +91,9 @@
  ../source/DevKit/Compiler/translation.h ../source/DevKit/Common/moreio.h \
  ../source/DevKit/Common/helpers.h \
  ../source/DevKit/ProjectManager/settings.h \
- ../source/DevKit/Compiler/hsi.h ../source/DevKit/Compiler/objtype.h \
- ../source/DevKit/Common/interface.h ../source/CommonCode/utf8.h
+ ../source/DevKit/Compiler/hsi.h ../source/CommonCode/tga.h \
+ ../source/DevKit/Compiler/objtype.h ../source/DevKit/Common/interface.h \
+ ../source/CommonCode/utf8.h
 /usr/include/stdc-predef.h:
 /usr/include/c++/11/stdlib.h:
 /usr/include/c++/11/cstdlib:
@@ -197,6 +198,7 @@
 ../source/DevKit/Common/helpers.h:
 ../source/DevKit/ProjectManager/settings.h:
 ../source/DevKit/Compiler/hsi.h:
+../source/CommonCode/tga.h:
 ../source/DevKit/Compiler/objtype.h:
 ../source/DevKit/Common/interface.h:
 ../source/CommonCode/utf8.h:

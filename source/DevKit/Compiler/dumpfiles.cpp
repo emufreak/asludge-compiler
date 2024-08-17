@@ -129,7 +129,7 @@ bool dumpFiles (FILE * mainFile, stringArray * & theSA) {
 				break;
 
 				case FILETYPE_UNKNOWN:
-				return addComment (ERRORTYPE_PROJECTERROR, "Tried to include a file which is not supported by SLUDGE.\n\nSupported music types: .XM, .MOD, .S3M, .IT\nSupported sampled sound types: .WAV, .OGG\nSupported graphic types: .TGA, .PNG\nSupported movie format: .WebM\nSLUDGE-specific types: .FLO, .ZBU, .DUC\n\nThe file you tried to include was:", theSA -> string, NULL, 0);
+				return addComment (ERRORTYPE_PROJECTERROR, "Tried to include a file which is not supported by SLUDGE.\n\nSupported music types: .XM, .MOD, .S3M, .IT\nSupported sampled sound types: .WAV, .OGG\nSupported graphic types: .TGA, .PNG\nSupported movie format: .WebM\nSLUDGE-specific types: .FLO, .ZBU, .ADUC\n\nThe file you tried to include was:", theSA -> string, NULL, 0);
 			}
 
 			inFile = fopen (theSA -> string, "rb");

@@ -48,7 +48,7 @@
  ../source/DevKit/Common/interface.h \
  ../source/DevKit/ProjectManager/settings.h \
  ../source/DevKit/Common/helpers.h ../source/DevKit/Compiler/hsi.h \
- ../source/DevKit/ProjectManager/messbox.h \
+ ../source/CommonCode/tga.h ../source/DevKit/ProjectManager/messbox.h \
  ../source/DevKit/Common/moreio.h ../source/DevKit/Compiler/floor.h \
  ../source/DevKit/Compiler/translation.h \
  ../source/DevKit/Compiler/dumpfiles.h \
@@ -107,6 +107,7 @@
 ../source/DevKit/ProjectManager/settings.h:
 ../source/DevKit/Common/helpers.h:
 ../source/DevKit/Compiler/hsi.h:
+../source/CommonCode/tga.h:
 ../source/DevKit/ProjectManager/messbox.h:
 ../source/DevKit/Common/moreio.h:
 ../source/DevKit/Compiler/floor.h:
